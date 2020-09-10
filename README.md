@@ -34,9 +34,9 @@ If you get the message `Welcome to the Picross 3D Caf√©!` (Europe and USA) or `„
 
 * Kartik for finding that the game is crashable with random data, letting me investigate and helping me search initial pivot points. Also testing completed exploit save in EUR New3DS. (And enduring my excitement at given moments during exploitation.)
 * yellows8 for the the very handy [3ds_ropkit](https://github.com/yellows8/3ds_ropkit)
-* Zoogie for helping with the 3ds_ropkit and finding stack pivot. As well help me test out initial testing phase SAVEDATAs
+* Zoogie for helping with the 3ds_ropkit and finding stack pivot, as well helping me test out initial testing phase SAVEDATAs
 * knight-ryu12 for testing completed exploit SAVE on JPN New3DS
-* ihaveahax for testing both testing on USA New3DS and Old3DS
+* ihaveahax for testing on USA New3DS and Old3DS
 * LunaDook for testing on JPN Old3DS and USA New3DS too
 * Everyone I've may forgotten to mention that assisted and/or supported me
   * If I forgot someone, or some detail, tell me
