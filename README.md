@@ -30,6 +30,8 @@ Just open the game, tap to enter the saves screen.
 
 If you get the message `Welcome to the Picross 3D Café!` (Europe and USA) or `いらっしゃいませ。 立体ピクロス カフェへようこそ。` (Japan) with no save slots used, just tap again. If doesn't run, double check if you installed exploit properly.
 
+Extra note: Currently the exploit requires game to run in English, except for the Japanese version.
+
 ## Credits and special thanks
 
 * Kartik for finding that the game is crashable with random data, letting me investigate and helping me search initial pivot points. Also testing completed exploit save in EUR New3DS. (And enduring my excitement at given moments during exploitation.)
