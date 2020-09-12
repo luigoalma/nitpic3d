@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define C_DEBUG CONSOLE_YELLOW
 #define C_DEFAULT CONSOLE_WHITE
@@ -14,6 +15,8 @@
 #else
 #define debugmsgprint(...) (void)0
 #endif
+
+static const FS_Path sdmcPath = {PATH_EMPTY, 1, ""};
 
 typedef struct {
 	u32 otherapp_file_offset;
@@ -35,18 +38,16 @@ typedef struct {
 
 #define SaveStatus_IsGood(x) ((x).save && (x).otherapp)
 
-// going lazy mode, and providing myself premade strings, rather than snprintf them
-
-static const char* const SavePaths[3] = {
-	"./eur/SAVEDATA",
-	"./usa/SAVEDATA",
-	"./jpn/SAVEDATA"
+static char SavePaths[3][256] = {
+	"/eur/SAVEDATA",
+	"/usa/SAVEDATA",
+	"/jpn/SAVEDATA"
 };
 
-static const char* const OtherappPaths[3] = {
-	"./eur/otherapp.bin",
-	"./usa/otherapp.bin",
-	"./jpn/otherapp.bin"
+static char OtherappPaths[3][256] = {
+	"/eur/otherapp.bin",
+	"/usa/otherapp.bin",
+	"/jpn/otherapp.bin"
 };
 
 static const char* const sploitheaders[3] = {
@@ -68,35 +69,50 @@ static const u64 GameTitleIDs[3] = {
 };
 
 static bool CheckSAVE(int region, otherapp_boundaries* boundaries) {
-	FILE* fp = fopen(SavePaths[region], "rb");
-	if (!fp) return false;
-
-	if (fseek(fp, 0, SEEK_END)) {
-		fclose(fp);
+	Handle filehandle;
+	FS_Path filePath = {PATH_ASCII, strlen(SavePaths[region])+1, SavePaths[region]};
+	Result res = FSUSER_OpenFileDirectly(&filehandle, ARCHIVE_SDMC, sdmcPath, filePath, FS_OPEN_READ, 0);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] Open file directly %08lX\n", res);
 		return false;
 	}
 
-	if (ftell(fp) != 0xb278) {
-		fclose(fp);
+	u64 filesize;
+	res = FSFILE_GetSize(filehandle, &filesize);
+
+	if (R_FAILED(res) || filesize != 0xb278) {
+		if(R_FAILED(res)) debugmsgprint(C_DEBUG "[DEBUG] Get Size %08lX\n", res);
+		else debugmsgprint(C_DEBUG "[DEBUG] File size %llu\n", filesize);
+		res = FSFILE_Close(filehandle);
+		if (R_FAILED(res)) svcCloseHandle(filehandle);
 		return false;
 	}
-
-	rewind(fp);
 
 	SploitSaveHeader header_data;
 
-	if (fread(&header_data, 1, sizeof(header_data), fp) < sizeof(header_data)) {
-		fclose(fp);
+	u32 totalread;
+	res = FSFILE_Read(filehandle, &totalread, 0LLU, &header_data, sizeof(header_data));
+
+	if (R_FAILED(res) || totalread != sizeof(header_data)) {
+		if(R_FAILED(res)) debugmsgprint(C_DEBUG "[DEBUG] File Read %08lX\n", res);
+		else debugmsgprint(C_DEBUG "[DEBUG] Total read %lu\n", totalread);
+		res = FSFILE_Close(filehandle);
+		if (R_FAILED(res)) svcCloseHandle(filehandle);
 		return false;
 	}
 
-	fclose(fp);
+	res = FSFILE_Close(filehandle);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] File close %08lX\n", res);
+		svcCloseHandle(filehandle);
+	}
 
 	// this does not guarantee finding all foul data, we dont know ROP boundaries
 	if (header_data.magicvar != 0x1000d00 || header_data.magicsize != 0xb278 ||
 	  strcmp(header_data.sploitmagic, sploitheaders[region]) ||
 	  header_data.otherapp_file_offset < sizeof(header_data) || header_data.otherapp_file_offset >= 0xb270 ||
 	  header_data.otherapp_file_offset + header_data.otherapp_limit_size > 0xb270) {
+		debugmsgprint(C_DEBUG "[DEBUG] Bad header");
 		return false;
 	}
 
@@ -106,55 +122,93 @@ static bool CheckSAVE(int region, otherapp_boundaries* boundaries) {
 }
 
 static bool CheckOtherapp(int region, const otherapp_boundaries* boundaries) {
-	FILE* fp = fopen(OtherappPaths[region], "rb");
-	if (!fp) return false;
-
-	if (fseek(fp, 0, SEEK_END)) {
-		fclose(fp);
+	Handle filehandle;
+	FS_Path filePath = {PATH_ASCII, strlen(OtherappPaths[region])+1, OtherappPaths[region]};
+	Result res = FSUSER_OpenFileDirectly(&filehandle, ARCHIVE_SDMC, sdmcPath, filePath, FS_OPEN_READ, 0);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] Open file directly %08lX\n", res);
 		return false;
 	}
 
-	if (ftell(fp) > boundaries->otherapp_limit_size) {
-		fclose(fp);
+	u64 filesize;
+	res = FSFILE_GetSize(filehandle, &filesize);
+
+	if (R_FAILED(res) || filesize > boundaries->otherapp_limit_size) {
+		if(R_FAILED(res)) debugmsgprint(C_DEBUG "[DEBUG] Get Size %08lX\n", res);
+		else debugmsgprint(C_DEBUG "[DEBUG] File size %llu\n", filesize);
+		res = FSFILE_Close(filehandle);
+		if (R_FAILED(res)) svcCloseHandle(filehandle);
 		return false;
+	}
+
+	res = FSFILE_Close(filehandle);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] File close %08lX\n", res);
+		svcCloseHandle(filehandle);
 	}
 
 	return true;
 }
 
 static u8* LoadPreparedSave(int region) {
-	FILE* fp = fopen(SavePaths[region], "rb");
-	if (!fp) return NULL;
+	Handle filehandle;
+	FS_Path savefilePath = {PATH_ASCII, strlen(SavePaths[region])+1, SavePaths[region]};
+	FS_Path otherappfilePath = {PATH_ASCII, strlen(OtherappPaths[region])+1, OtherappPaths[region]};
+
+	Result res = FSUSER_OpenFileDirectly(&filehandle, ARCHIVE_SDMC, sdmcPath, savefilePath, FS_OPEN_READ, 0);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] Open file directly %08lX\n", res);
+		return false;
+	}
 
 	u8* save = malloc(0xb278);
 	if (!save) {
-		fclose(fp);
+		res = FSFILE_Close(filehandle);
+		if (R_FAILED(res)) svcCloseHandle(filehandle);
 		return NULL;
 	}
 
-	if (fread(save, 1, 0xb278, fp) != 0xb278) {
-		fclose(fp);
+	u32 totalread;
+	res = FSFILE_Read(filehandle, &totalread, 0LLU, save, 0xb278);
+
+	if (R_FAILED(res) || totalread != 0xb278) {
+		if(R_FAILED(res)) debugmsgprint(C_DEBUG "[DEBUG] File Read %08lX\n", res);
+		else debugmsgprint(C_DEBUG "[DEBUG] Total read %lu\n", totalread);
+		res = FSFILE_Close(filehandle);
+		if (R_FAILED(res)) svcCloseHandle(filehandle);
 		free(save);
 		return NULL;
 	}
 
-	fclose(fp);
+	res = FSFILE_Close(filehandle);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] File close %08lX\n", res);
+		svcCloseHandle(filehandle);
+	}
 
 	const SploitSaveHeader* header = (SploitSaveHeader*)save;
 
-	fp = fopen(OtherappPaths[region], "rb");
-	if (!fp) {
+	res = FSUSER_OpenFileDirectly(&filehandle, ARCHIVE_SDMC, sdmcPath, otherappfilePath, FS_OPEN_READ, 0);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] Open file directly %08lX\n", res);
+		return false;
+	}
+
+	res = FSFILE_Read(filehandle, &totalread, 0LLU, &save[header->otherapp_file_offset], header->otherapp_limit_size);
+	if (R_FAILED(res) || !totalread) {
+		if(R_FAILED(res)) debugmsgprint(C_DEBUG "[DEBUG] File Read %08lX\n", res);
+		else debugmsgprint(C_DEBUG "[DEBUG] Nothing read.");
+		res = FSFILE_Close(filehandle);
+		if (R_FAILED(res)) svcCloseHandle(filehandle);
 		free(save);
 		return NULL;
 	}
 
-	if (!fread(&save[header->otherapp_file_offset], 1, header->otherapp_limit_size, fp)) {
-		fclose(fp);
-		free(save);
-		return NULL;
+	res = FSFILE_Close(filehandle);
+	if (R_FAILED(res)) {
+		debugmsgprint(C_DEBUG "[DEBUG] File close %08lX\n", res);
+		svcCloseHandle(filehandle);
 	}
-
-	fclose(fp);
 
 	return save;
 }
@@ -415,7 +469,37 @@ static void PrintControls(bool can_install, bool has_digital) {
 	puts(C_DEFAULT "Start - Exit");
 }
 
-int main() {
+static bool SetupPaths() {
+	static char cwd[256+9];
+	if (!getcwd(cwd, sizeof(cwd)))
+		return false;
+	char* start = strchr(cwd, '/'); // trying to truncate sdmc:
+	if (!start)
+		return false;
+	// and any remove any / from end of path
+	// if cwd == "/" then first '/' is also removed
+	// since save and otherapp paths already preinclude a starting /
+	for (int i = strlen(cwd)-1; &cwd[i] >= start && cwd[i] == '/'; --i) {
+		cwd[i] = 0;
+	}
+	static char tmpsaves[3][256];
+	static char tmpotherapps[3][256];
+	for (int i = 0; i < 3; ++i) {
+		int length = snprintf(tmpsaves[i], 256, "%s%s", start, SavePaths[i]);
+		if (length >= sizeof(SavePaths[0])) // path too big
+			return false;
+		length = snprintf(tmpotherapps[i], 256, "%s%s", start, OtherappPaths[i]);
+		if (length >= sizeof(OtherappPaths[0])) // path too big
+			return false;
+	}
+	for (int i = 0; i < 3; ++i) {
+		strcpy(SavePaths[i], tmpsaves[i]);
+		strcpy(OtherappPaths[i], tmpotherapps[i]);
+	}
+	return true;
+}
+
+int main(int argc, char** argv) {
 	gfxInitDefault();
 	amInit();
 	fsInit();
@@ -428,6 +512,11 @@ int main() {
 	consoleSelect(&topScreen);
 
 	puts(C_TITLE " == nitpic3d Installer ==\n");
+
+	if(!SetupPaths()) {
+		puts("Setting up paths failed");
+		puts("Defaulting to:\n sdmc:/eur/\n sdmc:/usa/\n sdmc:/jpn/\n");
+	}
 
 	printf(C_DEFAULT "SAVEFILE status:\n");
 
