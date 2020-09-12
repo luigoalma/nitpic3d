@@ -489,12 +489,12 @@ int main() {
 		for (int i = 0, printed = 0; i < 3; ++i) {
 			if (digital_availability[i]) {
 				printf(C_GOOD " - %s\n", regions[i]);
+				++printed;
 				if (!SaveStatus_IsGood(save_status[i])) {
 					// disable, not available for installing save
 					digital_availability[i] = false;
 				} else {
 					is_digital_available = true;
-					++printed;
 				}
 			} else if (i == 2 && printed == 0) {
 				puts(C_DEFAULT " - None");
