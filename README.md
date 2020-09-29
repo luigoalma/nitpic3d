@@ -21,6 +21,7 @@ Run `make` on an unix compatible terminal. Windows CMD is not usable.
 * Place the `nitpic3d_installer` itself from releases or your built output in `build/` and place it in the 3ds's SD card in `/3ds/`.
 * After copying folder, place the desired `otherapp.bin` in the desired region folder inside `/3ds/nitpic3d_installer/`.
   * `otherapp.bin` can be obtained [here](https://smealum.github.io/3ds/), except for European consoles running version 11.10 or above, for that go [here](https://deadphoenix8091.github.io/3ds/#otherapp) instead. Select the desired system version exploit will be running on and download with `Download otherapp`.
+  * Note: Do not put it on any of the language folder! Just on the region folder.
 * Run it from another another homebrew entrypoint, or another homebrewed console if planing to install to cart version.
 * Instructions on provided `README.md` inside `nitpic3d_installer`, plus simple control on screen when installer is running.
 
@@ -28,9 +29,9 @@ Run `make` on an unix compatible terminal. Windows CMD is not usable.
 
 Just open the game, tap to enter the saves screen.
 
-If you get the message `Welcome to the Picross 3D Café!` (Europe and USA) or `いらっしゃいませ。 立体ピクロス カフェへようこそ。` (Japan) with no save slots used, just tap again. If doesn't run, double check if you installed exploit properly.
+If you get the message `Welcome to the Picross 3D Café!` (English), `Willkommen im Picross 3D-Café!` (German), `¡Te doy la bienvenida a la cafetería de Picross 3D!` (Spanish), `Bienvenue au Café Picross 3D!` (French), `Ti do il benvenuto al Caffè Picross 3D!` (Italian) or `いらっしゃいませ。 立体ピクロス カフェへようこそ。` (Japanese) and with no save slots used, just tap again. If doesn't run, double check if you installed exploit properly.
 
-Extra note: Currently the exploit requires game to run in English, except for the Japanese version.
+Extra note: Once installed to a specific language, exploit will only run successfully if game runs on that language.
 
 ## Credits and special thanks
 

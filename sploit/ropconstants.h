@@ -98,4 +98,5 @@
 // USA: -0x8
 // JPN: -0xC
 // Object0 is then accessed with mov r0, [r0, #0x24]
+// despite languages on EUR and USA moving around memory, index overflow value is the same
 #define OVERFLOW_VALUE REGION(0x07AE1292, 0x07AE1292, 0x0147AC18)

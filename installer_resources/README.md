@@ -8,10 +8,20 @@ It can install for the three regions of the game: `eur`, `usa` and `jpn`
 
 The installer's folder itself, containing the `3dsx`, `smdh` and the region folders, should be copied to the `sdmc:/3ds/` instead of the individual contents.
 
-For each region folder there should be `SAVEDATA` targetting that region and the desired `otherapp.bin`. If either are missing for a certain region, or nitpic3d `SAVEDATA` is not intended for the region it is placed in, installation will be disabled for that region. The installer may also refuse to install the save if `otherapp.bin` is too big to fit into the save, as indicated by the nitpic3d save headers.
+For each region folder there should be language folders, each containing a `SAVEDATA` targetting that region and language. The desired `otherapp.bin` should be placed inside the region folder, not inside any of the language ones.
+
+If any `SAVEDATA` is missing or invalid for a language or region, installation for that language is disabled for that region. If all languages are disabled, installation to that region is disabled.
+
+If `otherapp.bin` is missing for a region, installation is disabled for that region. It may also disable its usage if it's too big to fit into the `SAVEDATA` file.
 
 ## Controls
 
 - Press X to install to the cart version of the game.
 - Press Y to install to the selected digital version of the game.
 - Press either X or Y while holding L to format the save archive before installing save.
+- Left and right on DPad to choose between regions
+- UP and down on DPad to choose between languages
+
+## Installation notes
+
+Once installed for one language, the game must run always in that language. If you which to use another language, reinstall.

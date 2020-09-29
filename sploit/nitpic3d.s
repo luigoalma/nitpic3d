@@ -12,11 +12,35 @@ _start:
 	.byte 'N', 'P', '3', 'D' @ sploit header
 	@ sploit game region
 #if defined EUR
-	.byte 'E', 'U', 'R', 0
+	.byte 'E'
+#if defined DE
+	.byte 'D', 'E'
+#elif defined EN
+	.byte 'E', 'N'
+#elif defined ES
+	.byte 'E', 'S'
+#elif defined FR
+	.byte 'F', 'R'
+#elif defined IT
+	.byte 'I', 'T'
+#else
+#error Expected language
+#endif
+	.byte 0
 #elif defined USA
-	.byte 'U', 'S', 'A', 0
+	.byte 'U'
+#if defined EN
+	.byte 'E', 'N'
+#elif defined ES
+	.byte 'E', 'S'
+#elif defined FR
+	.byte 'F', 'R'
+#else
+#error Expected language
+#endif
+	.byte 0
 #elif defined JPN
-	.byte 'J', 'P', 'N', 0
+	.byte 'J', 'J', 'A', 0
 #endif
 	.word __otherapp_savefile_start__
 	.word __otherapp_size__
